@@ -1,0 +1,36 @@
+{
+  "name": "inerciacreativa/wp-feed-show",
+  "type": "wordpress-plugin",
+  "license": "GPL2",
+  "description": "Widget para mostrar feeds RSS",
+  "homepage": "https://github.com/inerciacreativa/wp-feed-show",
+  "keywords": [
+    "wordpress",
+    "plugin",
+    "wordpress-plugin"
+  ],
+  "authors": [
+    {
+      "name": "José Cuesta",
+      "email": "jose.cuesta@inerciacreativa.com",
+      "homepage": "https://inerciacreativa.com",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": ">=7.1",
+    "composer/installers": "^1.5",
+    "inerciacreativa/wp-framework": "2.0"
+  },
+  "config": {
+    "vendor-dir": "vendor"
+  },
+  "extra": {
+    "installer-name": "ic-feed-show"
+  },
+  "autoload": {
+    "psr-4": {
+      "ic\\Plugin\\FeedShow\\": "source/"
+    }
+  }
+}
