@@ -1,7 +1,7 @@
 {
   "name": "inerciacreativa/wp-feed-show",
   "type": "wordpress-plugin",
-  "license": "GPL2",
+  "license": "MIT",
   "description": "Widget para mostrar feeds RSS",
   "homepage": "https://github.com/inerciacreativa/wp-feed-show",
   "keywords": [
@@ -20,7 +20,7 @@
   "require": {
     "php": ">=7.1",
     "composer/installers": "^1.5",
-    "inerciacreativa/wp-framework": "2.0"
+    "inerciacreativa/wp-framework": "^2.0"
   },
   "config": {
     "vendor-dir": "vendor"
