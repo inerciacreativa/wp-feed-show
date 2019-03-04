@@ -9,6 +9,11 @@ use ic\Framework\Html\Tag;
 use ic\Framework\Support\Arr;
 use ic\Framework\Support\Template;
 
+/**
+ * Class Widget
+ *
+ * @package ic\Plugin\FeedShow
+ */
 class Widget extends PluginWidget
 {
 
@@ -33,7 +38,7 @@ class Widget extends PluginWidget
 		}
 
 		try {
-			$feed = Feed::fetch($instance['feed'], Arr::get($instance, 'items', 4), Arr::get($instance, 'cache', 1));
+			$feed = Feed::fetch($instance['feed'], Arr::get($instance, 'items', 4), Arr::get($instance, 'cache', 1) * HOUR_IN_SECONDS);
 		} catch (\RuntimeException $exception) {
 			return;
 		}
