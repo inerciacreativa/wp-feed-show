@@ -213,7 +213,7 @@ class Item
 	{
 		$enclosure = $this->item->get_enclosure();
 
-		if (($enclosure instanceof \SimplePie_Enclosure) && Str::startsWith((string) $enclosure->get_type(), 'image')) {
+		if (($enclosure instanceof \SimplePie_Enclosure) && ($enclosure->get_type() !== null) && Str::startsWith($enclosure->get_type(), 'image')) {
 			return apply_filters('ic_feed_show_enclosure', $enclosure->get_link());
 		}
 
