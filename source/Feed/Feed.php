@@ -2,6 +2,7 @@
 
 namespace ic\Plugin\FeedShow\Feed;
 
+use ic\Framework\Support\Cache;
 use ic\Framework\Support\Repository;
 
 /**
@@ -39,6 +40,11 @@ class Feed extends Repository
 	];
 
 	/**
+	 * @var bool
+	 */
+	protected static $loaded = false;
+
+	/**
 	 * @param string $url
 	 * @param int    $items
 	 * @param int    $cache
@@ -46,7 +52,7 @@ class Feed extends Repository
 	 * @throws \RuntimeException
 	 * @return static
 	 */
-	public static function fetch(string $url, int $items, int $cache = 1)
+	public static function fetch(string $url, int $items, int $cache = 3600)
 	{
 		$feed = new static();
 
@@ -92,7 +98,11 @@ class Feed extends Repository
 	 */
 	public function __construct()
 	{
-		$this->load();
+		if (!self::$loaded) {
+			self::load();
+
+			self::$loaded = true;
+		}
 	}
 
 	/**
@@ -100,11 +110,18 @@ class Feed extends Repository
 	 * @param int    $cache
 	 * @param int    $timeout
 	 *
-	 * @throws \RuntimeException
 	 * @return \SimplePie
+	 * @throws \Exception
 	 */
-	protected function retrieve(string $url, int $cache = 1, int $timeout = 5): \SimplePie
+	protected function retrieve(string $url, int $cache = 3600, int $timeout = 5): \SimplePie
 	{
+		$id = $this->id($url);
+		if (($cache > 0) && ($rss = Cache::get($id))) {
+			return $rss;
+		}
+
+		$cache += random_int(0, 60);
+
 		$rss = new \SimplePie();
 
 		$rss->set_useragent(self::$userAgent);
@@ -112,7 +129,7 @@ class Feed extends Repository
 		$rss->set_file_class(\WP_SimplePie_File::class);
 
 		$rss->set_feed_url($url);
-		$rss->set_cache_duration($cache * HOUR_IN_SECONDS + random_int(0, 30));
+		$rss->set_cache_duration($cache);
 		$rss->set_timeout($timeout);
 		$rss->set_output_encoding(get_option('blog_charset'));
 
@@ -137,13 +154,27 @@ class Feed extends Repository
 			throw new \RuntimeException(__('An error has occurred, which probably means the feed is down. Try again later.'));
 		}
 
+		Cache::set($id, $rss, $cache);
+
 		return $rss;
+	}
+
+	/**
+	 * @param string $url
+	 *
+	 * @return string
+	 */
+	protected function id(string $url): string
+	{
+		$id = str_replace(['http://', 'https://', '.', '/'], ['', '', '_', '_'], $url);
+
+		return 'ic_feed-'. rtrim($id, '-');
 	}
 
 	/**
 	 * Load the required classes.
 	 */
-	protected function load()
+	protected static function load(): void
 	{
 		if (!class_exists(\SimplePie::class, false)) {
 			require_once ABSPATH . WPINC . '/class-simplepie.php';
