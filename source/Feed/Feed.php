@@ -122,21 +122,7 @@ class Feed extends Repository
 
 		$cache += random_int(0, 60);
 
-		$rss = new \SimplePie();
-
-		$rss->set_useragent(self::$userAgent);
-		$rss->set_cache_class(\WP_Feed_Cache::class);
-		$rss->set_file_class(\WP_SimplePie_File::class);
-
-		$rss->set_feed_url($url);
-		$rss->set_cache_duration($cache);
-		$rss->set_timeout($timeout);
-		$rss->set_output_encoding(get_option('blog_charset'));
-
-		$rss->strip_htmltags(self::$forbiddenTags);
-
-		$rss->init();
-		$rss->handle_content_type();
+		$rss = self::rss($url, $cache, $timeout);
 
 		if ($rss->error()) {
 			$error = $rss->error();
@@ -172,6 +158,34 @@ class Feed extends Repository
 	}
 
 	/**
+	 * @param string $url
+	 * @param int    $cache
+	 * @param int    $timeout
+	 *
+	 * @return \SimplePie
+	 */
+	protected static function rss(string $url, int $cache = 3600, int $timeout = 5): \SimplePie
+	{
+		$rss = new \SimplePie();
+
+		$rss->set_useragent(self::$userAgent);
+		$rss->set_cache_class(\WP_Feed_Cache::class);
+		$rss->set_file_class(\WP_SimplePie_File::class);
+
+		$rss->set_feed_url($url);
+		$rss->set_cache_duration($cache);
+		$rss->set_timeout($timeout);
+		$rss->set_output_encoding(get_option('blog_charset'));
+
+		$rss->strip_htmltags(self::$forbiddenTags);
+
+		$rss->init();
+		$rss->handle_content_type();
+
+		return $rss;
+	}
+
+	/**
 	 * Load the required classes.
 	 */
 	protected static function load(): void
@@ -185,4 +199,5 @@ class Feed extends Repository
 		require_once ABSPATH . WPINC . '/class-wp-simplepie-file.php';
 		require_once ABSPATH . WPINC . '/class-wp-simplepie-sanitize-kses.php';
 	}
+
 }
