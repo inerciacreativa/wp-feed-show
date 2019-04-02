@@ -2,8 +2,13 @@
 
 namespace ic\Plugin\FeedShow\Feed;
 
+use Exception;
 use ic\Framework\Support\Cache;
 use ic\Framework\Support\Repository;
+use RuntimeException;
+use SimplePie;
+use WP_Feed_Cache;
+use WP_SimplePie_File;
 
 /**
  * Class Feed
@@ -49,8 +54,8 @@ class Feed extends Repository
 	 * @param int    $items
 	 * @param int    $cache
 	 *
-	 * @throws \RuntimeException
 	 * @return static
+	 * @throws RuntimeException
 	 */
 	public static function fetch(string $url, int $items, int $cache = 3600)
 	{
@@ -65,8 +70,8 @@ class Feed extends Repository
 
 			$rss->__destruct();
 			unset($rss);
-		} catch (\RuntimeException $exception) {
-			throw new \RuntimeException($exception->getMessage());
+		} catch (RuntimeException $exception) {
+			throw new RuntimeException($exception->getMessage());
 		}
 
 		return $feed;
@@ -75,8 +80,8 @@ class Feed extends Repository
 	/**
 	 * @param string $url
 	 *
-	 * @throws \RuntimeException
 	 * @return bool
+	 * @throws RuntimeException
 	 */
 	public static function check(string $url): bool
 	{
@@ -86,8 +91,8 @@ class Feed extends Repository
 			$rss = $feed->retrieve($url, 0);
 			$rss->__destruct();
 			unset($rss);
-		} catch (\RuntimeException $exception) {
-			throw new \RuntimeException($exception->getMessage());
+		} catch (RuntimeException $exception) {
+			throw new RuntimeException($exception->getMessage());
 		}
 
 		return true;
@@ -110,10 +115,12 @@ class Feed extends Repository
 	 * @param int    $cache
 	 * @param int    $timeout
 	 *
-	 * @return \SimplePie
-	 * @throws \Exception
+	 * @return SimplePie
+	 *
+	 * @throws Exception
+	 * @throws RuntimeException
 	 */
-	protected function retrieve(string $url, int $cache = 3600, int $timeout = 5): \SimplePie
+	protected function retrieve(string $url, int $cache = 3600, int $timeout = 5): SimplePie
 	{
 		$id = $this->id($url);
 		if (($cache > 0) && ($rss = Cache::get($id))) {
@@ -130,14 +137,14 @@ class Feed extends Repository
 			$rss->__destruct();
 			unset($rss);
 
-			throw new \RuntimeException($error);
+			throw new RuntimeException($error);
 		}
 
 		if ($rss->get_item_quantity() === 0) {
 			$rss->__destruct();
 			unset($rss);
 
-			throw new \RuntimeException(__('An error has occurred, which probably means the feed is down. Try again later.'));
+			throw new RuntimeException(__('An error has occurred, which probably means the feed is down. Try again later.'));
 		}
 
 		Cache::set($id, $rss, $cache);
@@ -152,9 +159,14 @@ class Feed extends Repository
 	 */
 	protected function id(string $url): string
 	{
-		$id = str_replace(['http://', 'https://', '.', '/'], ['', '', '_', '_'], $url);
+		$id = str_replace(['http://', 'https://', '.', '/'], [
+			'',
+			'',
+			'_',
+			'_',
+		], $url);
 
-		return 'ic_feed-'. rtrim($id, '-');
+		return 'ic_feed-' . rtrim($id, '-');
 	}
 
 	/**
@@ -162,15 +174,15 @@ class Feed extends Repository
 	 * @param int    $cache
 	 * @param int    $timeout
 	 *
-	 * @return \SimplePie
+	 * @return SimplePie
 	 */
-	protected static function rss(string $url, int $cache = 3600, int $timeout = 5): \SimplePie
+	protected static function rss(string $url, int $cache = 3600, int $timeout = 5): SimplePie
 	{
-		$rss = new \SimplePie();
+		$rss = new SimplePie();
 
 		$rss->set_useragent(self::$userAgent);
-		$rss->set_cache_class(\WP_Feed_Cache::class);
-		$rss->set_file_class(\WP_SimplePie_File::class);
+		$rss->set_cache_class(WP_Feed_Cache::class);
+		$rss->set_file_class(WP_SimplePie_File::class);
 
 		$rss->set_feed_url($url);
 		$rss->set_cache_duration($cache);
@@ -190,7 +202,7 @@ class Feed extends Repository
 	 */
 	protected static function load(): void
 	{
-		if (!class_exists(\SimplePie::class, false)) {
+		if (!class_exists(SimplePie::class, false)) {
 			require_once ABSPATH . WPINC . '/class-simplepie.php';
 		}
 
