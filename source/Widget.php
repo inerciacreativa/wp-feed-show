@@ -8,6 +8,7 @@ use ic\Framework\Widget\WidgetForm;
 use ic\Framework\Html\Tag;
 use ic\Framework\Support\Arr;
 use ic\Framework\Support\Template;
+use RuntimeException;
 
 /**
  * Class Widget
@@ -27,9 +28,6 @@ class Widget extends PluginWidget
 
 	/**
 	 * @inheritdoc
-	 *
-	 * @throws \InvalidArgumentException
-	 * @throws \RuntimeException
 	 */
 	protected function frontend(array $instance, Tag $widget, Tag $title): void
 	{
@@ -39,7 +37,7 @@ class Widget extends PluginWidget
 
 		try {
 			$feed = Feed::fetch($instance['feed'], Arr::get($instance, 'items', 4), Arr::get($instance, 'cache', 1) * HOUR_IN_SECONDS);
-		} catch (\RuntimeException $exception) {
+		} catch (RuntimeException $exception) {
 			return;
 		}
 
@@ -77,7 +75,7 @@ class Widget extends PluginWidget
 		if (!empty($instance['feed'])) {
 			try {
 				Feed::check($instance['feed']);
-			} catch (\RuntimeException $exception) {
+			} catch (RuntimeException $exception) {
 				$instance['error'] = $exception->getMessage();
 			}
 		}
