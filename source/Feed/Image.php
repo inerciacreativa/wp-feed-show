@@ -5,6 +5,7 @@ namespace ic\Plugin\FeedShow\Feed;
 use ic\Framework\Html\Tag;
 use ic\Framework\Image\Image as ImageObject;
 use ic\Framework\Image\ImageSearch;
+use WP_Post;
 
 /**
  * Class Image
@@ -42,12 +43,13 @@ class Image
 	 * @param string $size
 	 * @param array  $attributes
 	 *
-	 * @return string
+	 * @return Tag|null
 	 */
-	public function fetch(string $size = 'thumbnail', array $attributes = []): string
+	public function fetch(string $size = 'thumbnail', array $attributes = []): ?Tag
 	{
 		if ($this->id) {
 			$image = wp_get_attachment_image($this->id, $size);
+			/** @noinspection NullPointerExceptionInspection */
 			$image = Tag::parse($image)->attributes($attributes);
 
 			if (!isset($image['alt'])) {
@@ -57,7 +59,7 @@ class Image
 			return $image;
 		}
 
-		return '';
+		return null;
 	}
 
 	/**
@@ -72,9 +74,9 @@ class Image
 	 * @param string $url
 	 * @param string $meta
 	 *
-	 * @return \WP_Post|null
+	 * @return WP_Post|null
 	 */
-	protected function get(string $url, string $meta): ?\WP_Post
+	protected function get(string $url, string $meta): ?WP_Post
 	{
 		$image = get_posts([
 			'meta_key'    => $meta,
