@@ -4,6 +4,9 @@ namespace ic\Plugin\FeedShow\Feed;
 
 use ic\Framework\Support\Arr;
 use ic\Framework\Support\Str;
+use SimplePie_Author;
+use SimplePie_Enclosure;
+use SimplePie_Item;
 
 /**
  * Class Item
@@ -14,7 +17,7 @@ class Item
 {
 
 	/**
-	 * @var \SimplePie_Item
+	 * @var SimplePie_Item
 	 */
 	protected $item;
 
@@ -51,9 +54,9 @@ class Item
 	/**
 	 * FeedItem constructor.
 	 *
-	 * @param \SimplePie_Item $item
+	 * @param SimplePie_Item $item
 	 */
-	public function __construct(\SimplePie_Item $item)
+	public function __construct(SimplePie_Item $item)
 	{
 		$this->item = $item;
 
@@ -65,14 +68,14 @@ class Item
 	}
 
 	/**
-	 * @param \SimplePie_Item $item
+	 * @param SimplePie_Item $item
 	 */
-	protected function setLink(\SimplePie_Item $item): void
+	protected function setLink(SimplePie_Item $item): void
 	{
 		// FeedBurner
 		$data = $item->get_item_tags('http://rssnamespace.org/feedburner/ext/1.0', 'origLink');
 
-		if (\is_array($data)) {
+		if (is_array($data)) {
 			// Original link is in <feedburner:origLink>
 			$link = Arr::get($data, '0.data', false);
 		} else {
@@ -99,11 +102,11 @@ class Item
 	}
 
 	/**
-	 * @param \SimplePie_Author|null $author
+	 * @param SimplePie_Author|null $author
 	 */
 	protected function setAuthor($author): void
 	{
-		if (\is_object($author)) {
+		if (is_object($author)) {
 			$this->author = esc_html(strip_tags($author->get_name()));
 		}
 	}
@@ -213,7 +216,7 @@ class Item
 	{
 		$enclosure = $this->item->get_enclosure();
 
-		if (($enclosure instanceof \SimplePie_Enclosure) && ($enclosure->get_type() !== null) && Str::startsWith($enclosure->get_type(), 'image')) {
+		if (($enclosure instanceof SimplePie_Enclosure) && ($enclosure->get_type() !== null) && Str::startsWith($enclosure->get_type(), 'image')) {
 			return apply_filters('ic_feed_show_enclosure', $enclosure->get_link());
 		}
 
@@ -228,7 +231,7 @@ class Item
 	 */
 	public function image(string $size = 'thumbnail', array $attributes = []): string
 	{
-		return apply_filters('ic_feed_show_image', $this->getImage()
+		return (string) apply_filters('ic_feed_show_image', $this->getImage()
 		                                                ->fetch($size, $attributes), $size);
 	}
 
