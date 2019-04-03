@@ -1,7 +1,7 @@
 <?php
-/** @var \ic\Plugin\FeedShow\Feed\Feed $feed */
+/** @var \ic\Plugin\FeedShow\Feed\Collection $items */
 /** @var \ic\Plugin\FeedShow\Feed\Item $item */
-foreach ($feed as $item):
+foreach ($items as $item):
 	?>
 
     <div class="feed-item">
