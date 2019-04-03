@@ -2,11 +2,8 @@
 
 namespace ic\Plugin\FeedShow\Feed;
 
-use ic\Framework\Support\Arr;
+use ic\Framework\Html\Tag;
 use ic\Framework\Support\Str;
-use SimplePie_Author;
-use SimplePie_Enclosure;
-use SimplePie_Item;
 
 /**
  * Class Item
@@ -15,11 +12,6 @@ use SimplePie_Item;
  */
 class Item
 {
-
-	/**
-	 * @var SimplePie_Item
-	 */
-	protected $item;
 
 	/**
 	 * @var string
@@ -34,109 +26,35 @@ class Item
 	/**
 	 * @var string
 	 */
-	protected $content;
+	protected $author;
 
 	/**
-	 * @var string
+	 * @var int
 	 */
 	protected $date;
 
 	/**
 	 * @var string
 	 */
-	protected $author;
+	protected $content;
 
 	/**
-	 * @var string
+	 * @var int
 	 */
 	protected $image;
 
 	/**
-	 * FeedItem constructor.
+	 * Item constructor.
 	 *
-	 * @param SimplePie_Item $item
+	 * @param array $properties
 	 */
-	public function __construct(SimplePie_Item $item)
+	public function __construct(array $properties)
 	{
-		$this->item = $item;
-
-		$this->setLink($item);
-		$this->setTitle($item->get_title());
-		$this->setAuthor($item->get_author());
-		$this->setDate($item->get_date('U'));
-		$this->setContent($item->get_content());
-	}
-
-	/**
-	 * @param SimplePie_Item $item
-	 */
-	protected function setLink(SimplePie_Item $item): void
-	{
-		// FeedBurner
-		$data = $item->get_item_tags('http://rssnamespace.org/feedburner/ext/1.0', 'origLink');
-
-		if (is_array($data)) {
-			// Original link is in <feedburner:origLink>
-			$link = Arr::get($data, '0.data', false);
-		} else {
-			$link = $item->get_link();
+		foreach ($properties as $name => $value) {
+			if (($value !== null) && property_exists($this, $name)) {
+				$this->$name = $value;
+			}
 		}
-
-		while (stristr($link, 'http') !== $link) {
-			$link = substr($link, 1);
-		}
-
-		$this->link = esc_url(strip_tags($link));
-	}
-
-	/**
-	 * @param string $title
-	 */
-	protected function setTitle($title): void
-	{
-		if (!empty($title)) {
-			$title = esc_html(trim(strip_tags($title)));
-		}
-
-		$this->title = empty($title) ? __('Untitled') : $title;
-	}
-
-	/**
-	 * @param SimplePie_Author|null $author
-	 */
-	protected function setAuthor($author): void
-	{
-		if (is_object($author)) {
-			$this->author = esc_html(strip_tags($author->get_name()));
-		}
-	}
-
-	/**
-	 * @param string|null $date
-	 */
-	protected function setDate($date): void
-	{
-		$this->date = $date;
-	}
-
-	/**
-	 * @param string $content
-	 */
-	protected function setContent($content): void
-	{
-		$this->content = Str::fromEntities($content);
-	}
-
-	/**
-	 * @return Image
-	 */
-	protected function getImage(): Image
-	{
-		if ($this->image === null) {
-			$this->image = new Image($this->link, $this);
-		}
-
-		return $this->image;
 	}
 
 	/**
@@ -148,17 +66,17 @@ class Item
 	}
 
 	/**
-	 * @return string
+	 * @return string|null
 	 */
-	public function title(): string
+	public function title(): ?string
 	{
 		return apply_filters('ic_feed_show_title', $this->title);
 	}
 
 	/**
-	 * @return string
+	 * @return string|null
 	 */
-	public function author(): string
+	public function author(): ?string
 	{
 		return apply_filters('ic_feed_show_author', $this->author);
 	}
@@ -166,15 +84,15 @@ class Item
 	/**
 	 * @param string $format
 	 *
-	 * @return string
+	 * @return string|null
 	 */
-	public function date(string $format = ''): string
+	public function date(string $format = ''): ?string
 	{
-		if (empty($this->date)) {
-			return apply_filters('ic_feed_show_date', '', '', $format);
+		if ($this->date === null) {
+			return apply_filters('ic_feed_show_date', null, null, $format);
 		}
 
-		if (empty($format)) {
+		if ($format === '') {
 			$format = (string) get_option('date_format');
 		}
 
@@ -182,9 +100,9 @@ class Item
 	}
 
 	/**
-	 * @return string
+	 * @return string|null
 	 */
-	public function content(): string
+	public function content(): ?string
 	{
 		return apply_filters('ic_feed_show_content', $this->content);
 	}
@@ -192,12 +110,12 @@ class Item
 	/**
 	 * @param int $words
 	 *
-	 * @return string
+	 * @return string|null
 	 */
-	public function excerpt(int $words = 55): string
+	public function excerpt(int $words = 55): ?string
 	{
-		if (empty($this->content)) {
-			return apply_filters('ic_feed_show_excerpt', '');
+		if ($this->content === null) {
+			return apply_filters('ic_feed_show_excerpt', null);
 		}
 
 		$summary = esc_attr(wp_trim_words($this->content, $words, ' [&hellip;]'));
@@ -210,29 +128,26 @@ class Item
 	}
 
 	/**
-	 * @return string
-	 */
-	public function enclosure(): string
-	{
-		$enclosure = $this->item->get_enclosure();
-
-		if (($enclosure instanceof SimplePie_Enclosure) && ($enclosure->get_type() !== null) && Str::startsWith($enclosure->get_type(), 'image')) {
-			return apply_filters('ic_feed_show_enclosure', $enclosure->get_link());
-		}
-
-		return apply_filters('ic_feed_show_enclosure', '');
-	}
-
-	/**
 	 * @param string $size
 	 * @param array  $attributes
 	 *
-	 * @return string
+	 * @return string|null
 	 */
-	public function image(string $size = 'thumbnail', array $attributes = []): string
+	public function image(string $size = 'thumbnail', array $attributes = []): ?string
 	{
-		return (string) apply_filters('ic_feed_show_image', $this->getImage()
-		                                                ->fetch($size, $attributes), $size);
+		if ($this->image === null) {
+			return apply_filters('ic_feed_show_image', null, $size, $attributes);
+		}
+
+		$image = wp_get_attachment_image($this->image, $size);
+		/** @noinspection NullPointerExceptionInspection */
+		$image = Tag::parse($image)->attributes($attributes);
+
+		if (!isset($image['alt'])) {
+			$image['alt'] = '';
+		}
+
+		return (string) apply_filters('ic_feed_show_image', $image, $size, $attributes);
 	}
 
 	/**
@@ -240,7 +155,7 @@ class Item
 	 */
 	public function has_image(): bool
 	{
-		return $this->getImage()->has();
+		return $this->image !== null;
 	}
 
 }

@@ -36,7 +36,7 @@ class Widget extends PluginWidget
 		}
 
 		try {
-			$feed = Feed::fetch($instance['feed'], Arr::get($instance, 'items', 4), Arr::get($instance, 'cache', 1) * HOUR_IN_SECONDS);
+			$feed = Feed::fetch($instance['feed'], Arr::get($instance, 'items', 4), Arr::get($instance, 'cache', 1));
 		} catch (RuntimeException $exception) {
 			return;
 		}

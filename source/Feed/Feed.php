@@ -2,9 +2,6 @@
 
 namespace ic\Plugin\FeedShow\Feed;
 
-use Exception;
-use ic\Framework\Support\Cache;
-use ic\Framework\Support\Repository;
 use RuntimeException;
 use SimplePie;
 use WP_Feed_Cache;
@@ -15,7 +12,7 @@ use WP_SimplePie_File;
  *
  * @package ic\Plugin\FeedShow\FeedShow\Feed
  */
-class Feed extends Repository
+class Feed
 {
 
 	/**
@@ -54,27 +51,34 @@ class Feed extends Repository
 	 * @param int    $items
 	 * @param int    $cache
 	 *
-	 * @return static
+	 * @return Collection
 	 * @throws RuntimeException
 	 */
-	public static function fetch(string $url, int $items, int $cache = 3600)
+	public static function fetch(string $url, int $items, int $cache): Collection
 	{
-		$feed = new static();
+		$cache      *= HOUR_IN_SECONDS;
+		$collection = new Collection($url, $items, $cache);
 
-		try {
-			$rss = $feed->retrieve($url, $cache);
+		if ($collection->hasExpired()) {
+			$feed = new static();
 
-			foreach ($rss->get_items(0, $items) as $item) {
-				$feed[] = new Item($item);
+			try {
+				$rss = $feed->retrieve($url, $cache - (MINUTE_IN_SECONDS * 5));
+
+				foreach ($rss->get_items(0, $items) as $item) {
+					$collection->add($item);
+				}
+
+				$rss->__destruct();
+				unset($rss);
+
+				$collection->save();
+			} catch (RuntimeException $exception) {
+				throw new RuntimeException($exception->getMessage());
 			}
-
-			$rss->__destruct();
-			unset($rss);
-		} catch (RuntimeException $exception) {
-			throw new RuntimeException($exception->getMessage());
 		}
 
-		return $feed;
+		return $collection;
 	}
 
 	/**
@@ -117,18 +121,10 @@ class Feed extends Repository
 	 *
 	 * @return SimplePie
 	 *
-	 * @throws Exception
 	 * @throws RuntimeException
 	 */
 	protected function retrieve(string $url, int $cache = 3600, int $timeout = 5): SimplePie
 	{
-		$id = $this->id($url);
-		if (($cache > 0) && ($rss = Cache::get($id))) {
-			return $rss;
-		}
-
-		$cache += random_int(0, 60);
-
 		$rss = self::rss($url, $cache, $timeout);
 
 		if ($rss->error()) {
@@ -147,26 +143,7 @@ class Feed extends Repository
 			throw new RuntimeException(__('An error has occurred, which probably means the feed is down. Try again later.'));
 		}
 
-		Cache::set($id, $rss, $cache);
-
 		return $rss;
-	}
-
-	/**
-	 * @param string $url
-	 *
-	 * @return string
-	 */
-	protected function id(string $url): string
-	{
-		$id = str_replace(['http://', 'https://', '.', '/'], [
-			'',
-			'',
-			'_',
-			'_',
-		], $url);
-
-		return 'ic_feed-' . rtrim($id, '-');
 	}
 
 	/**
