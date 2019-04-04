@@ -2,12 +2,12 @@
 
 namespace ic\Plugin\FeedShow;
 
-use ic\Plugin\FeedShow\Feed\Feed;
-use ic\Framework\Plugin\PluginWidget;
-use ic\Framework\Widget\WidgetForm;
 use ic\Framework\Html\Tag;
+use ic\Framework\Plugin\PluginWidget;
 use ic\Framework\Support\Arr;
 use ic\Framework\Support\Template;
+use ic\Framework\Widget\WidgetForm;
+use ic\Plugin\FeedShow\Feed\Feed;
 use RuntimeException;
 
 /**
@@ -42,11 +42,17 @@ class Widget extends PluginWidget
 		}
 
 		if ($instance['title_link'] && !empty($instance['title_url'])) {
-			$title->content(Tag::a(['href' => $instance['title_url']], $title->content()), true);
+			$link = Tag::a(['href' => $instance['title_url']], $title->content());
+			if (!empty($instance['lang'])) {
+				$link['hreflang'] = $instance['lang'];
+			}
+
+			$title->content($link, true);
 		}
 
-		$template = $instance['template_file'] . '.' . $instance['template_type'];
-		$content  = Template::render($template, ['feed' => $feed], $this->plugin->getAbsolutePath());
+		$template  = $instance['template_file'] . '.' . $instance['template_type'];
+		$variables = ['feed' => $feed, 'lang' => $instance['lang'] ?? false];
+		$content   = Template::render($template, $variables, $this->plugin->getAbsolutePath());
 
 		$widget->content($title);
 		$widget->content($content);
@@ -63,6 +69,7 @@ class Widget extends PluginWidget
 			'feed'          => '',
 			'title_link'    => false,
 			'title_url'     => '',
+			'lang'          => '',
 			'items'         => 4,
 			'cache'         => 1,
 			'error'         => false,
@@ -99,10 +106,16 @@ class Widget extends PluginWidget
 				'class' => 'widefat',
 			])),
 			$error,
-			Tag::p($form->checkbox('title_link', 1, 0, ['label' => __('Make the title a link', $this->id())])),
+			Tag::p($form->checkbox('title_link', 1, 0, [
+				'label' => __('Make the title a link', $this->id()),
+			])),
 			Tag::p($form->url('title_url', '', [
 				'label' => __('Link for title', $this->id()),
 				'class' => 'widefat',
+			])),
+			Tag::p($form->text('lang', '', [
+				'label' => __('Language (empty for default)', $this->id()),
+				'class' => 'tiny-text',
 			])),
 			Tag::p($form->number('items', 5, [
 				'label' => __('Items to display', $this->id()),
