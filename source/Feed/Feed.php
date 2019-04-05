@@ -63,7 +63,7 @@ class Feed
 			$feed = new static();
 
 			try {
-				$rss = $feed->retrieve($url, $cache - (MINUTE_IN_SECONDS * 5));
+				$rss = $feed->retrieve($url, 0);
 
 				foreach ($rss->get_items(0, $items) as $item) {
 					$collection->add($item);
