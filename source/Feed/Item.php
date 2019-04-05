@@ -84,12 +84,16 @@ class Item
 	/**
 	 * @param string $format
 	 *
-	 * @return string|null
+	 * @return string|int|null
 	 */
-	public function date(string $format = ''): ?string
+	public function date(string $format = '')
 	{
 		if ($this->date === null) {
 			return apply_filters('ic_feed_show_date', null, null, $format);
+		}
+
+		if ($format === 'U') {
+			return apply_filters('ic_feed_show_date', $this->date, $this->date, 'U');
 		}
 
 		if ($format === '') {
