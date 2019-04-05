@@ -76,17 +76,36 @@ class Collection implements Countable, IteratorAggregate
 		$converter = new Converter($item);
 		$link      = $converter->link();
 
-		if (empty($link) || array_key_exists($link, $this->items)) {
-			return false;
+		if (!empty($link) && !array_key_exists($link, $this->items)) {
+			$this->items[$link] = new Item($converter->item());
+
+			if ($this->count() > 1) {
+				uasort($this->items, [$this, 'sort']);
+			}
+
+			$this->modified = true;
 		}
 
-		$this->items[$link] = new Item($converter->item());
-
-		if ($this->count() > $this->max) {
+		while ($this->count() > $this->max) {
 			array_pop($this->items);
 		}
 
-		return $this->modified = true;
+		return $this->modified;
+	}
+
+	/**
+	 * @param Item $a
+	 * @param Item $b
+	 *
+	 * @return int
+	 */
+	protected function sort(Item $a, Item $b): int
+	{
+		if ($a->date('U') === $b->date('U')) {
+			return 0;
+		}
+
+		return $a->date('U') < $b->date('U') ? 1 : -1;
 	}
 
 	/**
