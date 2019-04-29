@@ -59,7 +59,7 @@ class Feed
 		$cache      *= HOUR_IN_SECONDS;
 		$collection = new Collection($url, $items, $cache);
 
-		if ($collection->hasExpired()) {
+		if ($collection->isEmpty() || $collection->hasExpired()) {
 			$feed = new static();
 
 			try {

@@ -67,6 +67,38 @@ class Collection implements Countable, IteratorAggregate
 	}
 
 	/**
+	 *
+	 */
+	protected function load(): void
+	{
+		$this->items = get_option($this->id('items'), []);
+		if (!is_array($this->items)) {
+			$this->items = [];
+		}
+
+		$timeout = get_option($this->id('timeout'));
+		if ($timeout !== false && $timeout < time()) {
+			$this->expired = true;
+		}
+	}
+
+	/**
+	 *
+	 */
+	public function save(): void
+	{
+		if ($this->expired || $this->modified) {
+			$this->removeExpiredItems();
+
+			update_option($this->id('items'), $this->items);
+			update_option($this->id('timeout'), time() + $this->expiration);
+
+			$this->expired  = false;
+			$this->modified = false;
+		}
+	}
+
+	/**
 	 * @param SimplePie_Item $item
 	 *
 	 * @return bool
@@ -76,36 +108,15 @@ class Collection implements Countable, IteratorAggregate
 		$converter = new Converter($item);
 		$link      = $converter->link();
 
-		if (!empty($link) && !array_key_exists($link, $this->items)) {
-			$this->items[$link] = new Item($converter->item());
-
-			if ($this->count() > 1) {
-				uasort($this->items, [$this, 'sort']);
-			}
-
-			$this->modified = true;
+		if (empty($link) || array_key_exists($link, $this->items)) {
+			return false;
 		}
 
-		while ($this->count() > $this->max) {
-			array_pop($this->items);
-		}
+		$this->items[$link] = new Item($converter->item());
 
-		return $this->modified;
-	}
+		$this->sortByDateDesc();
 
-	/**
-	 * @param Item $a
-	 * @param Item $b
-	 *
-	 * @return int
-	 */
-	protected function sort(Item $a, Item $b): int
-	{
-		if ($a->date('U') === $b->date('U')) {
-			return 0;
-		}
-
-		return $a->date('U') < $b->date('U') ? 1 : -1;
+		return $this->modified = true;
 	}
 
 	/**
@@ -114,6 +125,14 @@ class Collection implements Countable, IteratorAggregate
 	public function count(): int
 	{
 		return count($this->items);
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isEmpty(): bool
+	{
+		return $this->count() < 1;
 	}
 
 	/**
@@ -133,30 +152,6 @@ class Collection implements Countable, IteratorAggregate
 	}
 
 	/**
-	 *
-	 */
-	public function save(): void
-	{
-		if ($this->expired || $this->modified) {
-			update_option($this->id('items'), $this->items);
-			update_option($this->id('timeout'), time() + $this->expiration);
-		}
-	}
-
-	/**
-	 *
-	 */
-	protected function load(): void
-	{
-		$this->items = get_option($this->id('items'), []);
-
-		$timeout = get_option($this->id('timeout'));
-		if ($timeout === false || ($timeout !== false && $timeout < time())) {
-			$this->expired = true;
-		}
-	}
-
-	/**
 	 * @param string $suffix
 	 *
 	 * @return string
@@ -171,6 +166,44 @@ class Collection implements Countable, IteratorAggregate
 		}
 
 		return $this->id . '-' . $suffix;
+	}
+
+	/**
+	 * @return bool
+	 */
+	protected function sortByDateDesc(): bool
+	{
+		if ($this->count() < 2) {
+			return false;
+		}
+
+		$keys = array_keys($this->items);
+
+		uasort($this->items, static function (Item $a, Item $b) {
+			if ($a->date('U') === $b->date('U')) {
+				return 0;
+			}
+
+			return $a->date('U') < $b->date('U') ? 1 : -1;
+		});
+
+		return $keys !== array_keys($this->items);
+	}
+
+	/**
+	 * @return bool
+	 */
+	protected function removeExpiredItems(): bool
+	{
+		if ($this->isEmpty() || $this->count() <= $this->max) {
+			return false;
+		}
+
+		while ($this->count() > $this->max) {
+			array_pop($this->items);
+		}
+
+		return $this->modified = true;
 	}
 
 }

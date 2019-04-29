@@ -95,7 +95,7 @@ class Converter
 	 *
 	 * @return string|null
 	 */
-	protected function getEnclosure($enclosures): ?string
+	protected function getEnclosure(array $enclosures = null): ?string
 	{
 		if ($enclosures === null) {
 			return null;
@@ -115,7 +115,7 @@ class Converter
 	 *
 	 * @return string|null
 	 */
-	protected function getTitle($title): ?string
+	protected function getTitle(string $title = null): ?string
 	{
 		if (!empty($title)) {
 			$title = esc_html(trim(strip_tags($title)));
@@ -129,9 +129,9 @@ class Converter
 	 *
 	 * @return string|null
 	 */
-	protected function getAuthor($author): ?string
+	protected function getAuthor(SimplePie_Author $author = null): ?string
 	{
-		if (is_object($author)) {
+		if ($author) {
 			return esc_html(strip_tags($author->get_name()));
 		}
 
@@ -143,7 +143,7 @@ class Converter
 	 *
 	 * @return int|null
 	 */
-	protected function getDate($date): ?int
+	protected function getDate(string $date = null): ?int
 	{
 		if ($date === null) {
 			return null;
@@ -157,7 +157,7 @@ class Converter
 	 *
 	 * @return string|null
 	 */
-	protected function getContent($content): ?string
+	protected function getContent(string $content = null): ?string
 	{
 		if ($content === null) {
 			return null;
@@ -173,13 +173,13 @@ class Converter
 	 *
 	 * @return int|null
 	 */
-	protected function getImage($link, $enclosure, $content): ?int
+	protected function getImage(string $link, string $enclosure = null, string $content = null): ?int
 	{
-		if ($image = $this->getLocalImage($link)) {
+		if ($image = self::getLocalImage($link)) {
 			return $image;
 		}
 
-		return $this->getExternalImage($link, $enclosure, $content);
+		return self::getExternalImage($link, $enclosure, $content);
 	}
 
 	/**
@@ -187,7 +187,7 @@ class Converter
 	 *
 	 * @return int|null
 	 */
-	protected function getLocalImage($link): ?int
+	protected static function getLocalImage(string $link): ?int
 	{
 		$image = get_posts([
 			'meta_key'    => self::IMAGE,
@@ -213,7 +213,7 @@ class Converter
 	 *
 	 * @return int|null
 	 */
-	protected function getExternalImage($link, $enclosure, $content): ?int
+	protected static function getExternalImage(string $link, string $enclosure = null, string $content = null): ?int
 	{
 		$image = null;
 
@@ -227,14 +227,10 @@ class Converter
 			}
 		}
 
-		if ($image) {
-			$image->download();
+		if ($image && $image->download() && $image->isLocal()) {
+			update_post_meta($image->getId(), self::IMAGE, $link);
 
-			if ($image->isLocal()) {
-				update_post_meta($image->getId(), self::IMAGE, $link);
-
-				return $image->getId();
-			}
+			return $image->getId();
 		}
 
 		return null;
