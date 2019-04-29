@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ic Feed Show
  * Plugin URI:  https://github.com/inerciacreativa/wp-feed-show
- * Version:     3.0.2
+ * Version:     4.0.0
  * Text Domain: ic-feed-show
  * Domain Path: /languages
  * Description: Widget para mostrar feeds RSS.
@@ -12,20 +12,26 @@
  * License URI: https://opensource.org/licenses/MIT
  */
 
+use ic\Framework\Framework;
+use ic\Plugin\FeedShow\FeedShow;
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
-if (!class_exists(ic\Framework\Framework::class)) {
-	trigger_error('ic Framework not found', E_USER_ERROR);
+if (!class_exists(Framework::class)) {
+	throw new RuntimeException(sprintf('Could not find %s class.', Framework::class));
 }
 
-if (!class_exists(ic\Plugin\RewriteControl\RewriteControl::class)) {
-	if (file_exists(__DIR__ . '/vendor/autoload.php')) {
-		include_once __DIR__ . '/vendor/autoload.php';
+if (!class_exists(FeedShow::class)) {
+	$autoload = __DIR__ . '/vendor/autoload.php';
+
+	if (file_exists($autoload)) {
+		/** @noinspection PhpIncludeInspection */
+		include_once $autoload;
 	} else {
-		trigger_error('Could not load RewriteControl class', E_USER_ERROR);
+		throw new RuntimeException(sprintf('Could not load %s class.', FeedShow::class));
 	}
 }
 
-ic\Plugin\FeedShow\FeedShow::create(__FILE__);
+FeedShow::create(__FILE__);
