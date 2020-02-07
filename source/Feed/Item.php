@@ -122,7 +122,9 @@ class Item
 			return apply_filters('ic_feed_show_excerpt', null);
 		}
 
-		$summary = esc_attr(wp_trim_words($this->content, $words, ' [&hellip;]'));
+		$summary = Str::stripTags($this->content);
+		$summary = Str::whitespace($summary);
+		$summary = Str::words($summary, $words, ' [&hellip;]');
 
 		if (Str::endsWith($summary, '[...]')) {
 			$summary = Str::replaceLast($summary, '[...]', '[&hellip;]');
