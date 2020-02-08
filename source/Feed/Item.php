@@ -122,7 +122,7 @@ class Item
 			return apply_filters('ic_feed_show_excerpt', null);
 		}
 
-		$summary = Str::stripTags($this->content);
+		$summary = Str::stripTags($this->content, ['figure']);
 		$summary = Str::whitespace($summary);
 		$summary = Str::words($summary, $words, ' [&hellip;]');
 
