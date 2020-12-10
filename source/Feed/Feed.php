@@ -4,8 +4,11 @@ namespace ic\Plugin\FeedShow\Feed;
 
 use RuntimeException;
 use SimplePie;
+use SimplePie_Cache;
 use WP_Feed_Cache;
+use WP_Feed_Cache_Transient;
 use WP_SimplePie_File;
+use WP_SimplePie_Sanitize_KSES;
 
 /**
  * Class Feed
@@ -60,17 +63,14 @@ class Feed
 		$collection = new Collection($url, $items, $cache);
 
 		if ($collection->isEmpty() || $collection->hasExpired()) {
-			$feed = new static();
+			$instance = new static();
 
 			try {
-				$rss = $feed->retrieve($url, 0);
+				$feed = $instance->retrieve($url, 0);
 
-				foreach ($rss->get_items(0, $items) as $item) {
+				foreach ($feed->get_items(0, $items) as $item) {
 					$collection->add($item);
 				}
-
-				$rss->__destruct();
-				unset($rss);
 
 				$collection->save();
 			} catch (RuntimeException $exception) {
@@ -89,12 +89,10 @@ class Feed
 	 */
 	public static function check(string $url): bool
 	{
-		$feed = new static();
+		$instance = new static();
 
 		try {
-			$rss = $feed->retrieve($url, 0);
-			$rss->__destruct();
-			unset($rss);
+			$instance->retrieve($url, 0);
 		} catch (RuntimeException $exception) {
 			throw new RuntimeException($exception->getMessage());
 		}
@@ -125,25 +123,17 @@ class Feed
 	 */
 	protected function retrieve(string $url, int $cache = 3600, int $timeout = 5): SimplePie
 	{
-		$rss = self::rss($url, $cache, $timeout);
+		$feed = self::feed($url, $cache, $timeout);
 
-		if ($rss->error()) {
-			$error = $rss->error();
-
-			$rss->__destruct();
-			unset($rss);
-
-			throw new RuntimeException($error);
+		if ($feed->error()) {
+			throw new RuntimeException($feed->error());
 		}
 
-		if ($rss->get_item_quantity() === 0) {
-			$rss->__destruct();
-			unset($rss);
-
+		if ($feed->get_item_quantity() === 0) {
 			throw new RuntimeException(__('An error has occurred, which probably means the feed is down. Try again later.'));
 		}
 
-		return $rss;
+		return $feed;
 	}
 
 	/**
@@ -153,25 +143,33 @@ class Feed
 	 *
 	 * @return SimplePie
 	 */
-	protected static function rss(string $url, int $cache = 3600, int $timeout = 5): SimplePie
+	protected static function feed(string $url, int $cache = 3600, int $timeout = 5): SimplePie
 	{
-		$rss = new SimplePie();
+		$feed = new SimplePie();
 
-		$rss->set_useragent(self::$userAgent);
-		$rss->set_cache_class(WP_Feed_Cache::class);
-		$rss->set_file_class(WP_SimplePie_File::class);
+		$feed->set_sanitize_class('WP_SimplePie_Sanitize_KSES');
+		$feed->sanitize = new WP_SimplePie_Sanitize_KSES();
 
-		$rss->set_feed_url($url);
-		$rss->set_cache_duration($cache);
-		$rss->set_timeout($timeout);
-		$rss->set_output_encoding(get_option('blog_charset'));
+		if (method_exists('SimplePie_Cache', 'register')) {
+			SimplePie_Cache::register('wp_transient', WP_Feed_Cache_Transient::class);
+			$feed->set_cache_location('wp_transient');
+		} else {
+			$feed->set_cache_class(WP_Feed_Cache::class);
+		}
 
-		$rss->strip_htmltags(self::$forbiddenTags);
+		$feed->set_file_class(WP_SimplePie_File::class);
 
-		$rss->init();
-		$rss->handle_content_type();
+		$feed->set_feed_url($url);
+		$feed->set_cache_duration($cache);
+		$feed->set_timeout($timeout);
+		$feed->set_output_encoding(get_option('blog_charset'));
+		$feed->set_useragent(self::$userAgent);
+		$feed->strip_htmltags(self::$forbiddenTags);
 
-		return $rss;
+		$feed->init();
+		$feed->handle_content_type();
+
+		return $feed;
 	}
 
 	/**
@@ -183,7 +181,10 @@ class Feed
 			require_once ABSPATH . WPINC . '/class-simplepie.php';
 		}
 
-		require_once ABSPATH . WPINC . '/class-wp-feed-cache.php';
+		if (!method_exists('SimplePie_Cache', 'register')) {
+			require_once ABSPATH . WPINC . '/class-wp-feed-cache.php';
+		}
+
 		require_once ABSPATH . WPINC . '/class-wp-feed-cache-transient.php';
 		require_once ABSPATH . WPINC . '/class-wp-simplepie-file.php';
 		require_once ABSPATH . WPINC . '/class-wp-simplepie-sanitize-kses.php';
