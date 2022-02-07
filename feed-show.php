@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ic Feed Show
  * Plugin URI:  https://github.com/inerciacreativa/wp-feed-show
- * Version:     5.1.0
+ * Version:     5.1.1
  * Text Domain: ic-feed-show
  * Domain Path: /languages
  * Description: Widget para mostrar feeds RSS.
