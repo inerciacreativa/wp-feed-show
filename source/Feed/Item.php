@@ -145,7 +145,7 @@ class Item
 			return apply_filters('ic_feed_show_image', null, $size, $attributes);
 		}
 
-		$image = wp_get_attachment_image($this->image, $size);
+		$image = wp_get_attachment_image($this->image, $size, false, $attributes);
 		/** @noinspection NullPointerExceptionInspection */
 		$image = Tag::parse($image)->attributes($attributes);
 
